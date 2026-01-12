@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PlayCircle, ChevronLeft, ChevronRight, Hash, Clock, Settings, Search } from 'lucide-react';
+import { Home, PlayCircle, ChevronLeft, ChevronRight, Hash, Clock, Settings, Search, LogIn, UserPlus } from 'lucide-react';
 import { useRecentVideos } from '@/hooks/useRecentVideos';
 import { useEffect, useState } from 'react';
+import { getCurrentUser } from '@/lib/auth';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,10 +16,21 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { recentVideos } = useRecentVideos();
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
+    checkUser();
   }, []);
+
+  const checkUser = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    } catch (e) {
+      console.error('Error loading user', e);
+    }
+  };
 
   if (!mounted) return null;
 
@@ -27,45 +39,48 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       className={`
         fixed inset-y-0 left-0 z-50
         transition-all duration-300 ease-in-out
-        ${isOpen ? 'w-64' : 'w-20'}
+        ${isOpen ? 'w-56' : 'w-20'}
         flex flex-col
-        text-zinc-500 dark:text-zinc-400
-        border-r border-transparent 
+        bg-white dark:bg-zinc-950
       `}
     >
-      {/* Logo Area */}
-      <div className="h-20 flex items-center px-6 mb-2">
-        <div className={`flex items-center gap-3 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-           <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-50 flex items-center justify-center text-white dark:text-zinc-900 font-bold shrink-0">
-             L
-           </div>
-           <span className="text-zinc-900 dark:text-zinc-100 font-semibold text-lg tracking-tight whitespace-nowrap">
-             LanguageLearn
-           </span>
-        </div>
-        {/* Mobile-ish Logo when closed */}
-        {!isOpen && (
-           <div className="absolute left-1/2 -translate-x-1/2 w-10 h-10 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-bold">
-             L
-           </div>
+      {/* Header: Logo & Toggle */}
+      {/* Header: Logo & Toggle */}
+      <div className={`h-16 flex items-center px-4 mb-2 shrink-0 ${isOpen ? 'justify-between' : 'justify-center'}`}>
+        {isOpen && (
+            <div className="flex items-center gap-2 overflow-hidden animate-in fade-in duration-300">
+                <img src="/logo.png" alt="LanguageLearn" className="w-8 h-8 object-contain" />
+                <span className="text-zinc-900 dark:text-zinc-100 font-semibold text-lg tracking-tight whitespace-nowrap">
+                    LanguageLearn
+                </span>
+            </div>
         )}
+        
+        <button
+            onClick={onToggle}
+            className={`p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors ${!isOpen ? 'bg-zinc-100 dark:bg-zinc-800' : ''}`}
+            title={isOpen ? "收起側邊欄" : "展開側邊欄"}
+        >
+            {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+        </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-6 overflow-y-auto scrollbar-hide">
         {/* Main Section */}
         <div className="space-y-1">
+          
           <NavItem 
             href="/" 
             icon={<Home size={20} />} 
-            label="Home" 
+            label="首頁" 
             isOpen={isOpen} 
             active={pathname === '/'}
           />
           <NavItem 
             href="#" 
             icon={<Search size={20} />} 
-            label="Explore" 
+            label="探索" 
             isOpen={isOpen} 
             active={false}
           />
@@ -75,7 +90,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         {recentVideos.length > 0 && isOpen && (
           <div className="pt-4 animate-in fade-in duration-500">
             <h3 className="px-4 text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
-              Recent
+              最近觀看
             </h3>
             <div className="space-y-1">
               {recentVideos.map((video) => (
@@ -89,7 +104,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   `}
                 >
                   <PlayCircle size={16} className="shrink-0 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
-                  <span className="truncate">{video.title || 'Untitled Video'}</span>
+                  <span className="truncate">{video.title || '未命名影片'}</span>
                 </Link>
               ))}
             </div>
@@ -104,16 +119,28 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         )}
 
       </nav>
-
-      {/* Footer / Toggle */}
-      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/50">
-         <button
-            onClick={onToggle}
-            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800/50 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all"
-         >
-            {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-         </button>
-      </div>
+      
+      {/* Auth Section for Guests */}
+      {!user && (
+        <div className={`p-4 ${isOpen ? '' : 'flex justify-center'}`}>
+           <div className={`space-y-1 ${isOpen ? '' : 'flex flex-col gap-2'}`}>
+                <NavItem 
+                    href="/login" 
+                    icon={<LogIn size={20} />} 
+                    label="登入" 
+                    isOpen={isOpen} 
+                    active={pathname === '/login'}
+                />
+                <NavItem 
+                    href="/signup" 
+                    icon={<UserPlus size={20} />} 
+                    label="註冊" 
+                    isOpen={isOpen} 
+                    active={pathname === '/signup'}
+                />
+           </div>
+        </div>
+      )}
     </aside>
   );
 }

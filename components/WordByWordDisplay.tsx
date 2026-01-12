@@ -150,19 +150,19 @@ export default function WordByWordDisplay({
 
   // Determine container styles based on variant
   const containerStyles = variant === 'theater'
-    ? "h-96 overflow-y-hidden px-8 py-10 relative scrollbar-none [mask-image:linear-gradient(to_bottom,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_5%,black_95%,transparent)]"
+    ? "h-full overflow-y-auto px-8 py-10 relative scrollbar-none [mask-image:linear-gradient(to_bottom,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_5%,black_95%,transparent)]"
     : "flex-1 overflow-y-auto px-6 py-8 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800";
   return (
-    <div className={`h-full relative flex flex-col ${variant === 'theater' ? 'bg-transparent text-center' : 'bg-white dark:bg-zinc-900'}`}>
+    <div className={`h-full relative flex flex-col ${variant === 'theater' ? 'bg-transparent' : 'bg-white dark:bg-zinc-900'}`}>
       {/* Reader Toolbar */}
       {variant === 'theater' ? (
         /* Mini Toolbar for Theater Mode */
-        <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center pointer-events-none">
+        <div className="absolute bottom-2 right-0 z-20 flex pointer-events-none">
             <div className="flex items-center gap-1 bg-zinc-900/60 backdrop-blur-md border border-white/5 rounded-full px-2 py-1 pointer-events-auto transition-opacity duration-300 hover:bg-zinc-900/80">
                 <button 
                   onClick={() => setAutoScroll(!autoScroll)}
                   className={`p-1.5 rounded-full transition-colors ${autoScroll ? 'text-indigo-400 bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
-                  title={autoScroll ? "Auto-scroll On" : "Auto-scroll Off"}
+                  title={autoScroll ? "開啟自動捲動" : "關閉自動捲動"}
                 >
                    {autoScroll ? <Lock size={14} /> : <Unlock size={14} />}
                 </button>
@@ -171,21 +171,21 @@ export default function WordByWordDisplay({
                 <button
                    onClick={() => setTranslationMode('visible')}
                    className={`p-1.5 rounded-full transition-all ${translationMode === 'visible' ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
-                   title="Show Translation"
+                   title="顯示翻譯"
                 >
                    <Eye size={14} />
                 </button>
                 <button
                    onClick={() => setTranslationMode('blurred')}
                    className={`p-1.5 rounded-full transition-all ${translationMode === 'blurred' ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
-                   title="Blur Translation"
+                   title="模糊翻譯"
                 >
                    <VenetianMask size={14} />
                 </button>
                 <button
                    onClick={() => setTranslationMode('hidden')}
                    className={`p-1.5 rounded-full transition-all ${translationMode === 'hidden' ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
-                   title="Hide Translation"
+                   title="隱藏翻譯"
                 >
                    <EyeOff size={14} />
                 </button>
@@ -195,13 +195,13 @@ export default function WordByWordDisplay({
         /* Standard Toolbar for Document Mode */
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10 sticky top-0">
            <div className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
-              Reader Controls
+              閱讀控制
            </div>
            <div className="flex gap-2">
               <button 
                 onClick={() => setAutoScroll(!autoScroll)}
                 className={`p-1.5 rounded-md transition-colors ${autoScroll ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
-                title={autoScroll ? "Auto-scroll On" : "Auto-scroll Off"}
+                title={autoScroll ? "開啟自動捲動" : "關閉自動捲動"}
               >
                  {autoScroll ? <Lock size={16} /> : <Unlock size={16} />}
               </button>
@@ -210,21 +210,21 @@ export default function WordByWordDisplay({
               <button
                  onClick={() => setTranslationMode('visible')}
                  className={`p-1.5 rounded-md transition-all ${translationMode === 'visible' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
-                 title="Show Translation"
+                 title="顯示翻譯"
               >
                  <Eye size={16} />
               </button>
               <button
                  onClick={() => setTranslationMode('blurred')}
                  className={`p-1.5 rounded-md transition-all ${translationMode === 'blurred' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
-                 title="Blur Translation"
+                 title="模糊翻譯"
               >
                  <VenetianMask size={16} />
               </button>
               <button
                  onClick={() => setTranslationMode('hidden')}
                  className={`p-1.5 rounded-md transition-all ${translationMode === 'hidden' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
-                 title="Hide Translation"
+                 title="隱藏翻譯"
               >
                  <EyeOff size={16} />
               </button>
@@ -236,7 +236,7 @@ export default function WordByWordDisplay({
         ref={containerRef}
         className={containerStyles}
       >
-        <div className={`mx-auto space-y-8 ${variant === 'theater' ? 'max-w-4xl space-y-12' : 'max-w-prose space-y-8'}`}>
+        <div className={`mx-auto space-y-8 ${variant === 'theater' ? 'max-w-none space-y-12' : 'max-w-prose space-y-8'}`}>
            {transcript.map((segment, segIdx) => {
              const segmentWords = wordsBySegment[segIdx] || [];
              const isPast = segIdx < activeSegmentIndex;
@@ -244,11 +244,15 @@ export default function WordByWordDisplay({
              
              // In theater mode, hide past/future lines more aggressively
              const opacityClass = variant === 'theater'
-                ? isCurrent ? 'opacity-100 scale-100 blur-0' : 'opacity-30 blur-[1px] scale-95'
+                ? isCurrent ? 'opacity-100 scale-100 blur-0' : 'opacity-30 blur-[1px] scale-95 origin-left'
                 : isPast ? 'opacity-50 hover:opacity-100' : 'opacity-100';
 
              return (
-               <div key={segIdx} className={`flex gap-4 group transition-all duration-500 ${opacityClass} ${variant === 'theater' ? 'justify-center items-center flex-col' : ''}`}>
+               <div 
+                  key={segIdx} 
+                  onClick={() => onSeekTo?.(segment.start)}
+                  className={`flex gap-4 group transition-all duration-500 cursor-pointer ${opacityClass} ${variant === 'theater' ? 'justify-start' : ''}`}
+                >
                  {/* Timestamp - Hide in Theater Mode */}
                  {variant === 'document' && (
                    <div className="shrink-0 w-12 pt-1.5">
@@ -263,7 +267,7 @@ export default function WordByWordDisplay({
 
                  {/* Text Content */}
                  <div className="flex-1">
-                    <p className={`leading-relaxed text-zinc-800 dark:text-zinc-100 ${variant === 'theater' ? 'text-2xl font-semibold mb-2 block' : 'text-xl'}`}>
+                    <p className={`leading-relaxed text-zinc-800 dark:text-zinc-100 ${variant === 'theater' ? 'text-2xl font-semibold mb-2 block text-left' : 'text-xl'}`}>
                       {segmentWords.map((wordData, wIdx) => {
                         const isActive = activeWordIndex >= 0 && wordData === wordTimestamps[activeWordIndex];
                         
@@ -346,18 +350,18 @@ export default function WordByWordDisplay({
                      onClick={handleSaveWord}
                      className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-2 rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
                    >
-                     <Plus size={16} /> Save Word
+                     <Plus size={16} /> 儲存單字
                    </button>
                 </div>
              </div>
           ) : (
              <div className="p-6 text-center">
-                <p className="text-zinc-500 mb-4">No definition found.</p>
+                <p className="text-zinc-500 mb-4">找不到定義。</p>
                 <button 
                   onClick={handleSaveWord}
                    className="w-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 py-2 rounded-lg text-sm font-medium"
                 >
-                  Save to list anyway
+                  強行儲存
                 </button>
              </div>
           )}

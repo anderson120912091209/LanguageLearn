@@ -43,6 +43,7 @@ export default function TopBar() {
 
   return (
     <>
+      {(loading || user) && (
       <div className="w-full h-16 flex items-center justify-end px-8 py-4">
         <div className="flex items-center gap-4">
           {loading ? (
@@ -65,16 +66,10 @@ export default function TopBar() {
                 <LogOut size={18} />
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="px-5 py-2 bg-zinc-900 dark:bg-zinc-50 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium rounded-full transition-all hover:scale-105 shadow-sm"
-            >
-              Sign In
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
+      )}
 
       <AuthModal
         isOpen={showAuthModal}

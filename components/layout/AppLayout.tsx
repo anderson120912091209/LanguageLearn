@@ -17,11 +17,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         className={`
           flex-1 flex flex-col h-screen
           transition-all duration-300 ease-in-out
-          ${isSidebarOpen ? 'ml-64' : 'ml-20'}
-          p-4 pl-0
+          ${isSidebarOpen ? 'ml-56' : 'ml-20'}
+
         `}
       >
-        <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 rounded-[2rem] shadow-sm overflow-hidden border border-zinc-200 dark:border-zinc-800/50 relative mr-4 my-2 ring-1 ring-zinc-900/5">
+        <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900
+         rounded-2xl shadow-sm overflow-hidden relative m-2 border-sm border-zinc-200">
            {/* Top Bar inside the rounded container */}
            <TopBar />
            

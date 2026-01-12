@@ -73,13 +73,13 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
       <div className="h-full flex flex-col bg-white dark:bg-zinc-900">
         <div className="border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Flashcards
+            抽認卡
           </h2>
           <button
             onClick={() => setShowFlashcards(false)}
             className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
           >
-            Close
+            關閉
           </button>
         </div>
 
@@ -90,13 +90,13 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
               <div className="text-center">
                 {!showAnswer ? (
                   <>
-                    <p className="text-xs opacity-50 uppercase tracking-widest mb-6 font-medium">Question</p>
+                    <p className="text-xs opacity-50 uppercase tracking-widest mb-6 font-medium">問題</p>
                     <h3 className="text-3xl font-bold mb-4">{currentCard.word}</h3>
                     <p className="text-sm opacity-70 italic">"{currentCard.context}"</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-xs opacity-50 uppercase tracking-widest mb-6 font-medium">Answer</p>
+                    <p className="text-xs opacity-50 uppercase tracking-widest mb-6 font-medium">答案</p>
                     <h3 className="text-3xl font-bold mb-2">{currentCard.word}</h3>
                     <div className="w-12 h-1 bg-white/20 dark:bg-zinc-900/10 mx-auto my-4 rounded-full"></div>
                     <p className="text-xl mb-4 font-medium">{currentCard.translation}</p>
@@ -110,7 +110,7 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
                 onClick={handlePrevCard}
                 className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition"
               >
-                ← Previous
+                ← 上一張
               </button>
               
               <span className="text-zinc-400 text-sm font-mono">
@@ -121,7 +121,7 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
                 onClick={handleNextCard}
                 className="px-4 py-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition"
               >
-                Next →
+                下一張 →
               </button>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
       <div className="p-4 border-b border-zinc-100 dark:border-zinc-800/50">
         <div className="flex items-center justify-between mb-4">
            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-             Saved Words
+             已存單字
            </h2>
            <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs px-2 py-0.5 rounded-full font-medium">
              {words.length}
@@ -147,7 +147,7 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
         <div className="space-y-3">
           <input
             type="text"
-            placeholder="Search your list..."
+            placeholder="搜尋單字..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 text-sm placeholder:text-zinc-400 text-zinc-900 dark:text-white"
@@ -159,14 +159,14 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
               disabled={filteredWords.length === 0}
               className="flex-1 px-3 py-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-zinc-900 text-xs font-semibold uppercase tracking-wide rounded-lg transition"
             >
-              Flashcards
+              抽認卡
             </button>
             <button
               onClick={exportToCSV}
               disabled={words.length === 0}
               className="px-3 py-2 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 text-zinc-900 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wide rounded-lg transition"
             >
-              Export
+              匯出
             </button>
           </div>
         </div>
@@ -179,9 +179,9 @@ export default function VocabularyPanel({ words, onDelete, onSeekTo }: Vocabular
             <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-3">
                <span className="text-xl">📚</span>
             </div>
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">No words found</p>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">尚無單字</p>
             <p className="text-zinc-400 text-xs mt-1">
-              Click words in the transcript to save them here.
+              點擊逐字稿中的單字即可儲存。
             </p>
           </div>
         ) : (
