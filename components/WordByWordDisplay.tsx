@@ -15,7 +15,8 @@ interface WordByWordDisplayProps {
   transcript: TranscriptSegment[];
   currentTime: number;
   onSaveWord: (word: string, translation: string, context: string, timestamp: number) => void;
-  onSeekTo?: (time: number) => void; // Added prop for seeking
+  onSeekTo?: (time: number) => void;
+  variant?: 'document' | 'theater';
 }
 
 type TranslationMode = 'visible' | 'blurred' | 'hidden';
@@ -24,7 +25,8 @@ export default function WordByWordDisplay({
   transcript,
   currentTime,
   onSaveWord,
-  onSeekTo
+  onSeekTo,
+  variant = 'document'
 }: WordByWordDisplayProps) {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [wordDefinition, setWordDefinition] = useState<WordDefinition | null>(null);
@@ -64,12 +66,25 @@ export default function WordByWordDisplay({
       const elementRect = element.getBoundingClientRect();
       const relativeTop = elementRect.top - containerRect.top;
       
-      // If element is outside the "comfort zone" (top 30% to 60%), scroll it
-      if (relativeTop < containerRect.height * 0.3 || relativeTop > containerRect.height * 0.6) {
-         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (variant === 'theater') {
+         // Manual scroll calculation to position active text near the top (20-25%)
+         // This reduces visually perceived gap from the video
+         const targetY = containerRect.height * 0.25; 
+         const currentRelativeY = elementRect.top - containerRect.top;
+         const offset = currentRelativeY - targetY;
+         
+         container.scrollTo({
+            top: container.scrollTop + offset,
+            behavior: 'smooth'
+         });
+      } else {
+        // Comfortable reading zone for document mode
+        if (relativeTop < containerRect.height * 0.3 || relativeTop > containerRect.height * 0.6) {
+           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }
-  }, [activeWordIndex, autoScroll, selectedWord]);
+  }, [activeWordIndex, autoScroll, selectedWord, variant]);
 
   // Handle word click
   const handleWordClick = async (wordData: WordTimestamp, e: React.MouseEvent) => {
@@ -133,72 +148,122 @@ export default function WordByWordDisplay({
       return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  // Determine container styles based on variant
+  const containerStyles = variant === 'theater'
+    ? "h-96 overflow-y-hidden px-8 py-10 relative scrollbar-none [mask-image:linear-gradient(to_bottom,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_5%,black_95%,transparent)]"
+    : "flex-1 overflow-y-auto px-6 py-8 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800";
   return (
-    <div className="h-full relative flex flex-col bg-white dark:bg-zinc-900">
+    <div className={`h-full relative flex flex-col ${variant === 'theater' ? 'bg-transparent text-center' : 'bg-white dark:bg-zinc-900'}`}>
       {/* Reader Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10 sticky top-0">
-         <div className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
-            Reader Controls
-         </div>
-         <div className="flex gap-2">
-            <button 
-              onClick={() => setAutoScroll(!autoScroll)}
-              className={`p-1.5 rounded-md transition-colors ${autoScroll ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
-              title={autoScroll ? "Auto-scroll On" : "Auto-scroll Off"}
-            >
-               {autoScroll ? <Lock size={16} /> : <Unlock size={16} />}
-            </button>
-            <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1" />
-            
-            <button
-               onClick={() => setTranslationMode('visible')}
-               className={`p-1.5 rounded-md transition-all ${translationMode === 'visible' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
-               title="Show Translation"
-            >
-               <Eye size={16} />
-            </button>
-            <button
-               onClick={() => setTranslationMode('blurred')}
-               className={`p-1.5 rounded-md transition-all ${translationMode === 'blurred' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
-               title="Blur Translation"
-            >
-               <VenetianMask size={16} />
-            </button>
-            <button
-               onClick={() => setTranslationMode('hidden')}
-               className={`p-1.5 rounded-md transition-all ${translationMode === 'hidden' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
-               title="Hide Translation"
-            >
-               <EyeOff size={16} />
-            </button>
-         </div>
-      </div>
+      {variant === 'theater' ? (
+        /* Mini Toolbar for Theater Mode */
+        <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center pointer-events-none">
+            <div className="flex items-center gap-1 bg-zinc-900/60 backdrop-blur-md border border-white/5 rounded-full px-2 py-1 pointer-events-auto transition-opacity duration-300 hover:bg-zinc-900/80">
+                <button 
+                  onClick={() => setAutoScroll(!autoScroll)}
+                  className={`p-1.5 rounded-full transition-colors ${autoScroll ? 'text-indigo-400 bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
+                  title={autoScroll ? "Auto-scroll On" : "Auto-scroll Off"}
+                >
+                   {autoScroll ? <Lock size={14} /> : <Unlock size={14} />}
+                </button>
+                <div className="w-px h-3 bg-white/10 mx-0.5" />
+                
+                <button
+                   onClick={() => setTranslationMode('visible')}
+                   className={`p-1.5 rounded-full transition-all ${translationMode === 'visible' ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
+                   title="Show Translation"
+                >
+                   <Eye size={14} />
+                </button>
+                <button
+                   onClick={() => setTranslationMode('blurred')}
+                   className={`p-1.5 rounded-full transition-all ${translationMode === 'blurred' ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
+                   title="Blur Translation"
+                >
+                   <VenetianMask size={14} />
+                </button>
+                <button
+                   onClick={() => setTranslationMode('hidden')}
+                   className={`p-1.5 rounded-full transition-all ${translationMode === 'hidden' ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-zinc-200'}`}
+                   title="Hide Translation"
+                >
+                   <EyeOff size={14} />
+                </button>
+            </div>
+        </div>
+      ) : (
+        /* Standard Toolbar for Document Mode */
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm z-10 sticky top-0">
+           <div className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
+              Reader Controls
+           </div>
+           <div className="flex gap-2">
+              <button 
+                onClick={() => setAutoScroll(!autoScroll)}
+                className={`p-1.5 rounded-md transition-colors ${autoScroll ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}`}
+                title={autoScroll ? "Auto-scroll On" : "Auto-scroll Off"}
+              >
+                 {autoScroll ? <Lock size={16} /> : <Unlock size={16} />}
+              </button>
+              <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+              
+              <button
+                 onClick={() => setTranslationMode('visible')}
+                 className={`p-1.5 rounded-md transition-all ${translationMode === 'visible' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
+                 title="Show Translation"
+              >
+                 <Eye size={16} />
+              </button>
+              <button
+                 onClick={() => setTranslationMode('blurred')}
+                 className={`p-1.5 rounded-md transition-all ${translationMode === 'blurred' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
+                 title="Blur Translation"
+              >
+                 <VenetianMask size={16} />
+              </button>
+              <button
+                 onClick={() => setTranslationMode('hidden')}
+                 className={`p-1.5 rounded-md transition-all ${translationMode === 'hidden' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-400 hover:text-zinc-600'}`}
+                 title="Hide Translation"
+              >
+                 <EyeOff size={16} />
+              </button>
+           </div>
+        </div>
+      )}
 
       <div 
         ref={containerRef}
-        className="flex-1 overflow-y-auto px-6 py-8 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800"
+        className={containerStyles}
       >
-        <div className="max-w-prose mx-auto space-y-8">
+        <div className={`mx-auto space-y-8 ${variant === 'theater' ? 'max-w-4xl space-y-12' : 'max-w-prose space-y-8'}`}>
            {transcript.map((segment, segIdx) => {
              const segmentWords = wordsBySegment[segIdx] || [];
              const isPast = segIdx < activeSegmentIndex;
              const isCurrent = segIdx === activeSegmentIndex;
              
+             // In theater mode, hide past/future lines more aggressively
+             const opacityClass = variant === 'theater'
+                ? isCurrent ? 'opacity-100 scale-100 blur-0' : 'opacity-30 blur-[1px] scale-95'
+                : isPast ? 'opacity-50 hover:opacity-100' : 'opacity-100';
+
              return (
-               <div key={segIdx} className={`flex gap-4 group transition-opacity duration-500 ${isPast ? 'opacity-50 hover:opacity-100' : 'opacity-100'}`}>
-                 {/* Timestamp */}
-                 <div className="shrink-0 w-12 pt-1.5">
-                    <button 
-                       onClick={() => onSeekTo?.(segment.start)}
-                       className={`text-xs font-mono transition-colors hover:underline ${isCurrent ? 'text-indigo-500 font-bold' : 'text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400'}`}
-                    >
-                       {formatTime(segment.start)}
-                    </button>
-                 </div>
+               <div key={segIdx} className={`flex gap-4 group transition-all duration-500 ${opacityClass} ${variant === 'theater' ? 'justify-center items-center flex-col' : ''}`}>
+                 {/* Timestamp - Hide in Theater Mode */}
+                 {variant === 'document' && (
+                   <div className="shrink-0 w-12 pt-1.5">
+                      <button 
+                         onClick={() => onSeekTo?.(segment.start)}
+                         className={`text-xs font-mono transition-colors hover:underline ${isCurrent ? 'text-indigo-500 font-bold' : 'text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400'}`}
+                      >
+                         {formatTime(segment.start)}
+                      </button>
+                   </div>
+                 )}
 
                  {/* Text Content */}
                  <div className="flex-1">
-                    <p className="text-xl leading-relaxed text-zinc-800 dark:text-zinc-100">
+                    <p className={`leading-relaxed text-zinc-800 dark:text-zinc-100 ${variant === 'theater' ? 'text-2xl font-semibold mb-2 block' : 'text-xl'}`}>
                       {segmentWords.map((wordData, wIdx) => {
                         const isActive = activeWordIndex >= 0 && wordData === wordTimestamps[activeWordIndex];
                         
@@ -225,8 +290,9 @@ export default function WordByWordDisplay({
                     {translationMode !== 'hidden' && (
                        <p 
                         className={`
-                            mt-2 text-base font-light border-l-2 pl-3 transition-all duration-300
-                            ${isCurrent ? 'border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400' : 'border-zinc-100 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500'}
+                            font-light transition-all duration-300
+                            ${variant === 'theater' ? 'text-lg text-zinc-400 block mt-1' : 'text-base border-l-2 pl-3 mt-2'}
+                            ${variant !== 'theater' && (isCurrent ? 'border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400' : 'border-zinc-100 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500')}
                             ${translationMode === 'blurred' && 'blur-sm hover:blur-none select-none cursor-help'}
                         `}
                        >
@@ -241,6 +307,7 @@ export default function WordByWordDisplay({
            <div className="h-40" />
         </div>
       </div>
+
 
       {/* Popover Card */}
       {selectedWord && popoverPosition && (

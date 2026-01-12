@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { useRecentVideos } from '@/hooks/useRecentVideos';
 import { BookOpen, TableProperties, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { getTranscript, saveTranscript } from '@/lib/db';
 
 interface TranscriptSegment {
   text: string;
@@ -38,6 +39,8 @@ export default function WorkspacePage() {
   const [player, setPlayer] = useState<YouTubePlayer | null>(null);
   const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const [showVocabulary, setShowVocabulary] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'split' | 'stacked'>('split');
+  
   const [userId, setUserId] = useState<string | null>(null);
   const { addVideo } = useRecentVideos();
   
@@ -47,8 +50,6 @@ export default function WorkspacePage() {
     checkAuth();
     fetchTranscript();
     loadSavedWords();
-    // We'll add the video to history once the player is ready/title is available, 
-    // or just add it now with a default title and update it if we could fetch title (not implemented yet)
     addVideo(videoId, `Video ${videoId.substring(0, 5)}...`);
   }, [videoId]);
 
@@ -58,7 +59,6 @@ export default function WorkspacePage() {
   };
 
   useEffect(() => {
-    // Update current time more frequently for word-by-word highlighting
     const interval = setInterval(() => {
       if (playerRef.current) {
         const time = playerRef.current.getCurrentTime();
@@ -72,7 +72,22 @@ export default function WorkspacePage() {
   const fetchTranscript = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       
+      // 1. Try to load from cache first
+      try {
+        const cached = await getTranscript(videoId);
+        if (cached && cached.data && cached.data.length > 0) {
+            console.log('Loaded transcript from cache');
+            setTranscript(cached.data);
+            setLoading(false);
+            return;
+        }
+      } catch (cacheErr) {
+        console.warn('Cache lookup failed, proceeding to network fetch:', cacheErr);
+      }
+
+      // 2. If not in cache, fetch from API
       const response = await fetch('/api/transcript', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,8 +106,13 @@ export default function WorkspacePage() {
       }
       
       setTranscript(data.transcript);
+      
+      // 3. Save to cache
+      await saveTranscript(videoId, data.transcript);
+      
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error fetching transcript:', err);
+      setError(err.message || 'Failed to load transcript');
     } finally {
       setLoading(false);
     }
@@ -103,7 +123,6 @@ export default function WorkspacePage() {
       const user = await getCurrentUser();
       
       if (user) {
-        // Load from Supabase if authenticated
         const { data, error: savedError } = await supabase
           .from('vocabulary')
           .select('*')
@@ -124,7 +143,6 @@ export default function WorkspacePage() {
           })));
         }
       } else {
-        // Fallback to localStorage if not authenticated
         const stored = localStorage.getItem(`vocabulary_${videoId}`);
         if (stored) {
           setSavedWords(JSON.parse(stored));
@@ -132,7 +150,6 @@ export default function WorkspacePage() {
       }
     } catch (err) {
       console.error('Error loading saved words:', err);
-      // Fallback to localStorage on error
       const stored = localStorage.getItem(`vocabulary_${videoId}`);
       if (stored) {
         setSavedWords(JSON.parse(stored));
@@ -143,9 +160,6 @@ export default function WorkspacePage() {
   const onPlayerReady = (event: { target: YouTubePlayer }) => {
     setPlayer(event.target);
     playerRef.current = event.target;
-    // Optionally update title here if API allows access to video data
-    // const videoData = event.target.getVideoData();
-    // addVideo(videoId, videoData.title);
   };
 
   const seekToTime = (time: number) => {
@@ -160,7 +174,6 @@ export default function WorkspacePage() {
       const user = await getCurrentUser();
       
       if (user) {
-        // Save to Supabase if authenticated
         const { data, error } = await supabase
           .from('vocabulary')
           .insert({
@@ -188,7 +201,6 @@ export default function WorkspacePage() {
           setSavedWords([newWord, ...savedWords]);
         }
       } else {
-        // Fallback to localStorage
         const newWord: SavedWord = {
           id: Date.now().toString(),
           word,
@@ -212,7 +224,6 @@ export default function WorkspacePage() {
       const user = await getCurrentUser();
       
       if (user) {
-        // Delete from Supabase if authenticated
         const { error } = await supabase
           .from('vocabulary')
           .delete()
@@ -222,11 +233,8 @@ export default function WorkspacePage() {
         if (error) throw error;
       }
       
-      // Update local state
       const updatedWords = savedWords.filter(w => w.id !== id);
       setSavedWords(updatedWords);
-      
-      // Also update localStorage
       localStorage.setItem(`vocabulary_${videoId}`, JSON.stringify(updatedWords));
     } catch (err) {
       console.error('Error deleting word:', err);
@@ -238,7 +246,7 @@ export default function WorkspacePage() {
     height: '100%',
     width: '100%',
     playerVars: {
-      autoplay: 1, // Auto-play when entering workspace is usually expected
+      autoplay: 1,
       modestbranding: 1,
       rel: 0,
     },
@@ -249,10 +257,37 @@ export default function WorkspacePage() {
       
       {/* Workspace Header */}
       <div className="flex items-center justify-between mb-6">
-        <Link href="/" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
-            <ArrowLeft size={18} />
-            <span className="font-medium">Back to Home</span>
-        </Link>
+        <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+                <ArrowLeft size={18} />
+                <span className="font-medium">Back to Home</span>
+            </Link>
+
+            {/* Layout Toggle */}
+            <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 gap-1">
+                <button
+                    onClick={() => setLayoutMode('split')}
+                    className={`p-1.5 rounded-md transition-all ${layoutMode === 'split' ? 'bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+                    title="Split View"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <line x1="12" x2="12" y1="3" y2="21"/>
+                    </svg>
+                </button>
+                <button
+                    onClick={() => setLayoutMode('stacked')}
+                    className={`p-1.5 rounded-md transition-all ${layoutMode === 'stacked' ? 'bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+                    title="Theater Mode"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <line x1="3" x2="21" y1="12" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <div className="flex gap-3">
             <button
             onClick={() => setShowVocabulary(false)}
@@ -275,9 +310,25 @@ export default function WorkspacePage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+      <div 
+        className={`
+            flex-1 min-h-0 transition-all duration-500 ease-in-out
+            ${layoutMode === 'split' 
+                ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' 
+                : 'flex flex-col gap-6 max-w-5xl mx-auto w-full'
+            }
+        `}
+      >
         {/* Video Player */}
-        <div className="bg-black rounded-2xl shadow-sm overflow-hidden ring-1 ring-zinc-900/5 aspect-video lg:aspect-auto lg:h-full">
+        <div 
+            className={`
+                bg-black rounded-2xl shadow-sm overflow-hidden ring-1 ring-zinc-900/5 transition-all duration-500
+                ${layoutMode === 'split' 
+                    ? 'aspect-video lg:aspect-auto lg:h-full' 
+                    : 'w-full aspect-video shrink-0 shadow-xl ring-zinc-900/10'
+                }
+            `}
+        >
             <YouTube
             videoId={videoId}
             opts={opts}
@@ -287,7 +338,16 @@ export default function WorkspacePage() {
         </div>
 
         {/* Transcript or Vocabulary Panel */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm overflow-hidden ring-1 ring-zinc-200 dark:ring-zinc-800 flex flex-col h-[500px] lg:h-full">
+        {/* Transcript or Vocabulary Panel */}
+        <div 
+            className={`
+                transition-all duration-500 ease-in-out
+                ${layoutMode === 'split'
+                    ? 'bg-white dark:bg-zinc-900 rounded-2xl shadow-sm overflow-hidden ring-1 ring-zinc-200 dark:ring-zinc-800 h-[500px] lg:h-full flex flex-col'
+                    : 'w-full mt-1 z-10 relative overflow-hidden'
+                }
+            `}
+        >
             {showVocabulary ? (
             <VocabularyPanel
                 words={savedWords}
@@ -295,14 +355,14 @@ export default function WorkspacePage() {
                 onSeekTo={seekToTime}
             />
             ) : loading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center p-12">
                 <div className="flex flex-col items-center gap-3">
                 <Loader2 className="animate-spin text-zinc-900 dark:text-white w-8 h-8" />
                 <p className="text-zinc-500 font-medium">Loading contents...</p>
                 </div>
             </div>
             ) : error ? (
-            <div className="flex items-center justify-center h-full p-8 text-center text-red-500">
+            <div className="flex items-center justify-center p-12 text-center text-red-500">
                 <div>
                     <h3 className="font-bold text-lg mb-2">Unavailable</h3>
                     <p className="text-sm opacity-80">{error}</p>
@@ -314,6 +374,7 @@ export default function WorkspacePage() {
                 currentTime={currentTime}
                 onSaveWord={handleSaveWord}
                 onSeekTo={seekToTime}
+                variant={layoutMode === 'stacked' ? 'theater' : 'document'}
             />
             )}
         </div>
